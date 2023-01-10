@@ -1,0 +1,68 @@
+
+<!-- saved from url=(0014)about:internet -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252"></head><body><center>
+<h1>Custom Sound</h1>
+
+<input id="sample" placeholder="sample">
+
+<button onclick="doBeep()">Beep!</button>
+
+<script>
+function doBeep() {
+    let data = [];
+    let cur = -1;
+    let sine0 = [0, 0.38, 0.71, 0.92, 1, 0.92, 0.71, 0.38];
+    let env0 = [0.1, 0.3, 0.7, 1, 0.7, 0.3, 0, 0];
+    let sine1 = [0, 0.5, 0.87, 1, 0.87, 0.5];
+    let env1 = [0.1, 0.25, 0.55, 0.8, 1, 0.8, 0.55, 0.25, 0.1, 0];
+    let sine = [0, 0.78, 0.97, 0.43, -0.43, -0.97, -0.78];
+    let env = [0, 0.3, 0.7, 1, 1, 0.7, 0.3, 0];
+    
+    function bit(v) {
+        if (v == 0) {
+            bit(0.1);
+            v = 1;
+        }
+        for (let j = 0; j < env.length; j++) {
+            let m = env[j] * v;
+            for (let i = 0; i < sine.length; i++) {
+                data.push(sine[i] * m);
+            }
+        }
+    }
+
+    for (let i = 0; i < 300; i++) {
+        bit(1);
+    }
+    
+    let txt = document.getElementById('sample').value + '\n';
+    for (let j = 0; j < txt.length; j++) {
+        bit(0);
+        let b = txt.charCodeAt(j);
+        let parity = 0;
+        for (let k = 0; k < 8; k++) {
+            bit(b & 1);
+            parity ^= (b & 1);
+            b >>= 1;
+        }
+        bit(parity);
+        bit(1);
+    }
+    for (let i = 0; i < 100; i++) {
+        bit(1);
+    }
+    
+    let ctx = new AudioContext();
+    let buf = ctx.createBuffer(1, data.length, 16000);
+    let sndArray = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+        sndArray[i] = data[i];
+    }
+    let src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start();
+}
+</script>
+
+</center></body></html>
