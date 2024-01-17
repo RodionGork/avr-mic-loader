@@ -1,0 +1,178 @@
+<!doctype html>
+
+<html>
+<head>
+  <title>AVR Assembler Online</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link href="./bs.css" rel="stylesheet"/>
+  <style>
+    input {
+      text-align: center;
+    }
+    textarea {
+      font-family: monospace;
+      white-space: pre;
+      overflow-wrap: normal;
+      overflow-x: scroll;
+    }
+  </style>
+</head>
+<body>
+  <div class="container text-center">
+    <div class="row" id="row-add-record">
+      <div class="col-md-12"><h3>AVR Assembler Online</h3></div>
+      <form class="col-md-12">
+        <div class="form-group">
+          <textarea id="input" class="form-control" rows="13" placeholder="code here">.device atmega8
+.org 0
+
+start:
+nop
+rjmp start</textarea>
+        </div>
+        <div class="form-group">
+          <input onclick="runme()" type="button" value="Compile" class="btn btn-primary"/>
+        </div>
+        <div class="form-group">
+          <textarea id="output" class="form-control" rows="10" disabled="1"></textarea>
+        </div>
+        <div class="form-group">
+          <input onclick="burn()" type="button" class="btn btn-secondary" value="Burn!!!"/>
+        </div>
+        <div class="form-group">
+          <input id="binary" type="text" class="form-control"/>
+        </div>
+	</form>
+<script src="./avra.js"></script>
+
+<script>
+
+Module.noInitialRun = true;
+
+Module.preRun = function() {
+    console.log('prerun called');
+    var errbuf = '';
+    function stdout(code) {
+        var out = document.getElementById('output');
+        out.value += String.fromCharCode(code);
+    }
+    FS.init(()=>null, stdout, stdout);
+}
+
+Module.onRuntimeInitialized = function() {
+    console.log('runtime initialized');
+    //FS.writeFile('/prog.lua', code);
+}
+
+function parseHex(x) {
+    var res = 0;
+    while (x.length) {
+      res = res * 256 + parseInt('0x' + x.substr(x.length - 2));
+      x = x.substring(0, x.length - 2);
+    }
+    return res;
+}
+
+function convertHex(s) {
+    var seg = [];
+    var m = [...(s.matchAll(/\:[0-9A-F]+/g))];
+    for (var i = 0; i != m.length; i++) {
+        var ln = m[i][0].substring(1);
+        var sz = parseHex(ln.substring(0, 4));
+        var offs = parseHex(ln.substring(4, 8));
+        for (var j = 0; j != sz; j++) {
+            var p = 8 + j*2;
+            var addr = offs + j;
+            if (512 > addr) seg[addr] = parseHex(ln.substring(p, p+2));
+        }
+    }
+    return seg;
+}
+
+function runme() {
+    console.log('run started');
+    var inp = document.getElementById('input').value;
+    FS.writeFile('/test.asm', inp);
+    document.getElementById('output').value = '';
+    try {
+        Module.ccall('shmain', 'number', [], []);
+    } catch (e) {
+        if (('' + e.message).indexOf('exit(0)') == -1) {
+            throw e;
+        }
+        console.log('completed normally');
+    }
+    var f = FS.readFile('/test.hex');
+    var s = ''; for (var i = 0; i != f.length; i++) s+= String.fromCharCode(f[i]);
+    window.hexCode = convertHex(s);
+    document.getElementById('binary').value = hexCode.join(' ');
+}
+
+function burn() {
+    let data = [];
+    let cur = -1;
+    let sine = [0, 1, 1, 1, 1, 1, 0, -1, -1, -1, -1, -1];
+    let hushes = [0, 16, 40, 70];
+    
+    function bit(v) {
+        for (let j = 0; j < 5; j++) {
+            for (let i = 0; i < sine.length; i++) {
+                data.push(sine[i]);
+            }
+        }
+        for (let i = 0; i < hushes[v+1]; i++) {
+            data.push(0);
+        }
+    }
+
+    for (let i = 0; i < 50; i++) {
+        bit(-1);
+    }
+
+    let bytes = [0, 0, 0];
+    let chksum = 0x5A;
+    for (let j = 0; j < hexCode.length; j++) {
+        let b = hexCode[j];
+        chksum = (chksum << 1) ^ b;
+        if (chksum >= 0x100) {
+            chksum ^= 0x101;
+        }
+        bytes.push(b);
+    }
+    bytes[0] = chksum;
+    bytes[1] = hexCode.length & 0xFF;
+    bytes[2] = hexCode.length >> 8;
+    
+    console.log('burning: ' + bytes.join(' '));
+    document.getElementById('binary').value = 'burning: ' + bytes.join(' ');
+    for (let j = 0; j < bytes.length; j++) {
+        let b = bytes[j];
+        let parity = 0;
+        for (let k = 0; k < 8; k++) {
+            bit(b & 1);
+            parity ^= (b & 1);
+            b >>= 1;
+        }
+        bit(2);
+    }
+
+    for (let i = 0; i < 20; i++) {
+        bit(-1);
+    }
+    
+    let ctx = new AudioContext();
+    let buf = ctx.createBuffer(1, data.length, 16000);
+    let sndArray = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+        sndArray[i] = data[i];
+    }
+    let src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start();
+}
+
+</script>
+</body>
+</html>
