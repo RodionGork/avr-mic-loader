@@ -110,13 +110,21 @@ do_signal:
     
     cp  r25, r30
     breq chksum_ok
-    ldi r16, 3
+    ldi r16, 30
+    rcall delay
+    ldi r16, 5
     rcall blink_err
     rjmp loop
 
 chksum_ok:
-    rcall write_page
-    rjmp loop
+    rcall write_program
+
+signal_done:
+    ldi r16, 50
+    rcall delay
+    ldi r16, 3
+    rcall blink_err
+    rjmp signal_done
 
 SAMPLE:
     push r18
@@ -209,7 +217,7 @@ long:
 BLINK_ERR:
     sbi PORTB, 0
     push r16
-    ldi r16, 15
+    ldi r16, 5
     rcall delay
     cbi PORTB, 0
     ldi r16, 10
@@ -219,15 +227,33 @@ BLINK_ERR:
     brne blink_err
     ret
 
+WRITE_PROGRAM:
+    clr r2        ; page pointer
+    clr r3
+    ldi r28, 0
+    ldi r29, 1
+write_next_page:
+    rcall write_page
+    ldi r16, 0x40
+    add r2, r16
+    clr r16
+    adc r3, r16
+    cp r29, r27
+    brlo write_next_page
+    brne writing_done
+    cp r28, r26
+    brlo write_next_page
+writing_done:
+    ret
+
 WRITE_PAGE:
-    ldi r30, 0    ; erase page
-    ldi r31, 0
+    mov r30, r2   ; erase page
+    mov r31, r3
     ldi r16, 0b011
     rcall do_spm
 
-    ldi r28, 0
-    ldi r29, 1
-    push r30
+    clr r30
+    clr r31
 
 next_byte:
     ld r0, Y+
@@ -236,10 +262,11 @@ next_byte:
     rcall do_spm
     adiw r30, 2
 
-    cp r28, r26
+    cpi r30, 64
     brlo next_byte
 
-    pop r30
+    mov r30, r2
+    mov r31, r3
     ldi r16, 0b101
     rcall do_spm
 
