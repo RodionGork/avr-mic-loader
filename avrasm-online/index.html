@@ -1,21 +1,49 @@
-<center>
-<h1>AVRA</h1>
-<h3>Prepare input before start (synchronous flow)</h3>
-<textarea id="input" cols="60" rows="10">.device atmega8
+<!doctype html>
+
+<html>
+<head>
+  <title>AVR Assembler Online</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link href="./bs.css" rel="stylesheet"/>
+  <style>
+    input {
+      text-align: center;
+    }
+    textarea {
+      font-family: monospace;
+      white-space: pre;
+      overflow-wrap: normal;
+      overflow-x: scroll;
+    }
+  </style>
+</head>
+<body>
+  <div class="container text-center">
+    <div class="row" id="row-add-record">
+      <div class="col-md-12"><h3>AVR Assembler Online</h3></div>
+      <form class="col-md-12">
+        <div class="form-group">
+          <textarea id="input" class="form-control" rows="13" placeholder="code here">.device atmega8
 .org 0
 
 start:
 nop
-rjmp start
-</textarea>
-<br/><br/>
-<button onclick="runme()">Compile</button>
-<br/><br/>
-<textarea disabled="1" id="output" cols="60" rows="10"></textarea>
-<br/><br/>
-<button onclick="burn()">Burn!</button>
-<br/><br/>
-<input disabled="true" id="binary" size="60"/>
+rjmp start</textarea>
+        </div>
+        <div class="form-group">
+          <input onclick="runme()" type="button" value="Compile" class="btn btn-primary"/>
+        </div>
+        <div class="form-group">
+          <textarea id="output" class="form-control" rows="10" disabled="1"></textarea>
+        </div>
+        <div class="form-group">
+          <input onclick="burn()" type="button" class="btn btn-secondary" value="Burn!!!"/>
+        </div>
+        <div class="form-group">
+          <input id="binary" type="text" class="form-control"/>
+        </div>
+	</form>
 <script src="./avra.js"></script>
 
 <script>
@@ -146,3 +174,5 @@ function burn() {
 }
 
 </script>
+</body>
+</html>
