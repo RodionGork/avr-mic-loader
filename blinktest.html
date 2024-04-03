@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    #blinker {
+      width:100px;
+      height:100px;
+      background: #000;
+    }
+  </style>
+</head>
+<body>
+
+<center>
+<h1>Blinker Test</h1>
+<input id="phrase" type="text"><br><br>
+<button onclick="doBlink()">Blink!</button><br><br>
+<input id="slower" type="checkbox"> <span id="fps">74.75</span>
+</center>
+<canvas id="cnv" width="100" height="100"></canvas>
+
+<script>
+
+var blinker = document.getElementById('blinker');
+var cnv = document.getElementById('cnv');
+var ctx = cnv.getContext('2d');
+ctx.fillStyle = 'black';
+ctx.fillRect(0, 0, 100, 100);
+var txbuf = [];
+
+
+function doBlink() {
+  var data = document.getElementById('phrase').value;
+  var newbuf = [];
+  for (var i = 0; i < data.length; i++) {
+    var c = data.codePointAt(i);
+    newbuf.push(0);
+    newbuf.push(1);
+    for (var j = 0; j < 8; j++) {
+      for (var k = (c >> (7-j)) & 1; k >= 0; k--)
+        newbuf.push(j%2);
+    }
+  }
+  newbuf.push(0);
+  newbuf.push(1);
+  //console.log(newbuf.join(' '));
+  txbuf = newbuf;
+}
+
+var skipper = 0;
+var slower = document.getElementById('slower');
+var fps = document.getElementById('fps');
+var tprev = new Date().getTime();
+var dtavg = 0;
+
+function again(dt) {
+  requestAnimationFrame(again);
+  if (slower.checked) {
+    if (skipper++) {
+      skipper = 0;
+      return;
+    }
+  }
+  if (txbuf.length) {
+    ctx.fillStyle = txbuf.shift() ? 'black' : 'white';
+    ctx.fillRect(0, 0, 100, 100);
+  }
+  var t = new Date().getTime();
+  var dt = t - tprev;
+  tprev = t;
+  dtavg = (dtavg * 15 + dt) / 16;
+  if (Math.random() < 0.15) {
+    fps.innerText = ('' + (1000/dtavg)).substr(0, 5);
+  }
+}
+
+requestAnimationFrame(again);
+</script>
+
+
+
+
+</body></html>
