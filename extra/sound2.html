@@ -1,0 +1,49 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252"></head><body><center>
+<h1>Custom Sound</h1>
+
+<input id="sample" placeholder="sample">
+
+<button onclick="doBeep()">Beep!</button>
+
+<script>
+function doBeep() {
+    let data = [];
+    let cur = -1;
+    
+    function bit(v) {
+        data.push(1);
+        for (let n = 13 - v * 6; n > 0; n--)
+            data.push(0);
+    }
+
+    for (let i = 0; i < 10; i++)
+        data.push(0);
+    for (let i = 0; i < 16; i++)
+        bit(1);
+    
+    let txt = document.getElementById('sample').value + '\n';
+    for (let i = 0; i < txt.length; i++) {
+        bit(0);
+        let c = txt.charCodeAt(i);
+        for (let j = 0; j < 8; j++) {
+            bit(c & 1);
+            c >>= 1;
+        }
+        bit(1);
+        bit(1);
+    }
+
+    let ctx = new AudioContext();
+    let buf = ctx.createBuffer(1, data.length, 16000);
+    let sndArray = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+        sndArray[i] = data[i];
+    }
+    let src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start();
+}
+</script>
+
+</center></body></html>
