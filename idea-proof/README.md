@@ -16,3 +16,8 @@ Press the `Beep` button. You should see your text appearing in the serial consol
 
 Debug mode is enabled by connecting `pin 9` to `GND` (in this case serial
 console shows reception of every bit, ADC levels etc).
+
+### Receiver-air
+
+This setup requires few more components (transistor, capacitor and resistor.
+Scheme is yet to be added. Explanation too.
